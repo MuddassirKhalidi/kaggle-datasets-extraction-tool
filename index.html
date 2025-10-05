@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Search & Download Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dataset Search & Download Manager</h1>
+            <p>Search for datasets and manage your downloads</p>
+        </header>
+
+        <div class="separator"></div>
+
+        <div class="search-section">
+            <div class="search-bar-container">
+                <input type="text" id="searchInput" placeholder="Enter dataset search keyword..." class="search-input">
+                <button id="searchBtn" class="search-btn">Search</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="datasets-table">
+                <thead>
+                    <tr>
+                        <th class="available-column">Available Datasets</th>
+                        <th class="download-column">Download Datasets</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="available-column">
+                            <div id="availableDatasets" class="datasets-list">
+                                <p class="no-data">No search results yet. Enter a keyword to search for datasets.</p>
+                            </div>
+                        </td>
+                        <td class="download-column">
+                            <div id="downloadDatasets" class="datasets-list">
+                                <p class="no-data">Selected datasets will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button id="clearAllBtn" class="clear-btn">Clear All</button>
+            <button id="downloadSelectedBtn" class="download-btn">Download Selected</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

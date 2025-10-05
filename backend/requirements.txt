@@ -1,0 +1,4 @@
+fastapi
+kaggle
+uvicorn
+python-dotenv
