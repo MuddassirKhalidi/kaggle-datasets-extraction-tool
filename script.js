@@ -62,14 +62,51 @@ class DatasetManager {
     constructor() {
         this.availableDatasets = [];
         this.downloadDatasets = [];
+        this.uploadedFiles = [];
+        this.currentMode = 'files'; // 'files' or 'keyword'
         this.initializeEventListeners();
     }
 
     initializeEventListeners() {
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileUploadArea = document.getElementById('fileUploadArea');
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+        
+        // Mode switching
+        const modeRadios = document.querySelectorAll('input[name="searchMode"]');
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => this.handleModeChange(e.target.value));
+        });
+
+        // File upload functionality
+        uploadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                this.handleFileSelect(e.target.files);
+                // Clear the input value to allow selecting the same file again
+                e.target.value = '';
+            }
+        });
+        
+        // Drag and drop functionality
+        fileUploadArea.addEventListener('click', (e) => {
+            // Only trigger if the click is not on the upload button
+            if (e.target !== uploadBtn && !uploadBtn.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+        fileUploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+        fileUploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+        fileUploadArea.addEventListener('drop', (e) => this.handleDrop(e));
 
         // Search functionality
         searchBtn.addEventListener('click', () => this.handleSearch());
@@ -89,7 +126,211 @@ class DatasetManager {
         this.updateDownloadButton();
     }
 
+    // File validation
+    isValidFileType(file) {
+        const allowedTypes = ['.csv', '.pdf', '.docx', '.xlsx'];
+        const fileName = file.name.toLowerCase();
+        return allowedTypes.some(type => fileName.endsWith(type));
+    }
+
+    // Get file icon based on type
+    getFileIcon(fileName) {
+        const ext = fileName.toLowerCase().split('.').pop();
+        const icons = {
+            'csv': '📊',
+            'pdf': '📄',
+            'docx': '📝',
+            'xlsx': '📈'
+        };
+        return icons[ext] || '📁';
+    }
+
+    // Format file size
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Handle file selection
+    handleFileSelect(files) {
+        console.log('Files selected:', files.length);
+        
+        const validFiles = [];
+        const invalidFiles = [];
+
+        Array.from(files).forEach(file => {
+            console.log('Processing file:', file.name, 'Type:', file.type, 'Size:', file.size);
+            if (this.isValidFileType(file)) {
+                validFiles.push(file);
+            } else {
+                invalidFiles.push(file);
+            }
+        });
+
+        if (invalidFiles.length > 0) {
+            const invalidNames = invalidFiles.map(f => f.name).join(', ');
+            alert(`The following files are not supported: ${invalidNames}\n\nSupported formats: CSV, PDF, Word (.docx), Excel (.xlsx)`);
+        }
+
+        if (validFiles.length > 0) {
+            this.uploadedFiles = [...this.uploadedFiles, ...validFiles];
+            console.log('Total uploaded files:', this.uploadedFiles.length);
+            this.renderUploadedFiles();
+            // Don't automatically populate Available Datasets - only show uploaded files list
+        }
+    }
+
+    // Handle drag over
+    handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    // Handle drag leave
+    handleDragLeave(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    // Handle drop
+    handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        this.handleFileSelect(files);
+    }
+
+    // Process uploaded files and create dataset entries
+    processUploadedFiles() {
+        this.availableDatasets = this.uploadedFiles.map((file, index) => ({
+            id: index + 1,
+            name: file.name,
+            description: `Uploaded file: ${file.name} (${this.formatFileSize(file.size)})`,
+            size: this.formatFileSize(file.size),
+            category: 'Uploaded File',
+            file: file
+        }));
+
+        this.renderAvailableDatasets();
+    }
+
+    // Render uploaded files list
+    renderUploadedFiles() {
+        const container = document.getElementById('uploadedFiles');
+        const fileList = document.getElementById('fileList');
+
+        if (this.uploadedFiles.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        fileList.innerHTML = this.uploadedFiles.map((file, index) => `
+            <div class="file-item">
+                <div class="file-info">
+                    <span class="file-icon">${this.getFileIcon(file.name)}</span>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${this.formatFileSize(file.size)}</span>
+                </div>
+                <button class="remove-file-btn" onclick="datasetManager.removeFile(${index})">×</button>
+            </div>
+        `).join('');
+    }
+
+    // Remove file from uploaded files
+    removeFile(index) {
+        this.uploadedFiles.splice(index, 1);
+        this.renderUploadedFiles();
+        // Don't automatically update Available Datasets when removing files
+        this.renderDownloadDatasets();
+        this.updateDownloadButton();
+    }
+
+    // Handle mode change
+    handleModeChange(mode) {
+        this.currentMode = mode;
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const searchInputArea = document.getElementById('searchInputArea');
+        
+        if (mode === 'files') {
+            fileUploadArea.style.display = 'flex';
+            searchInputArea.style.display = 'none';
+        } else {
+            fileUploadArea.style.display = 'none';
+            searchInputArea.style.display = 'flex';
+        }
+    }
+
+    // Handle search (unified method for both modes)
     async handleSearch() {
+        if (this.currentMode === 'files') {
+            await this.handleSearchWithFiles();
+        } else {
+            await this.handleSearchWithKeyword();
+        }
+    }
+
+    // Handle search with files
+    async handleSearchWithFiles() {
+        if (this.uploadedFiles.length === 0) {
+            alert('Please upload at least one file before searching for similar datasets.');
+            return;
+        }
+
+        try {
+            // Show loading state
+            const container = document.getElementById('availableDatasets');
+            container.innerHTML = '<p class="loading">Searching for similar datasets...</p>';
+
+            // Create FormData with uploaded files
+            const formData = new FormData();
+            
+            // Add each uploaded file to FormData
+            this.uploadedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            console.log(`Sending ${this.uploadedFiles.length} files to backend for search`);
+
+            // Call the FastAPI backend with POST request and FormData
+            const response = await fetch(`${CONFIG.BACKEND_URL}/search-files`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log('Search response:', data);
+            
+            // Transform the API response to match the expected format
+            this.availableDatasets = data.datasets.map((dataset, index) => ({
+                id: index + 1,
+                name: dataset.title,
+                description: dataset.reference,
+                category: 'Similar Dataset'
+            }));
+
+            this.renderAvailableDatasets();
+            
+            // Show success message
+            console.log(data.message);
+            
+        } catch (error) {
+            console.error('Error searching similar datasets:', error);
+            const container = document.getElementById('availableDatasets');
+            container.innerHTML = `<p class="error">Error searching for similar datasets. Please make sure the backend server is running on ${CONFIG.BACKEND_URL}</p>`;
+        }
+    }
+
+    // Handle search with keyword
+    async handleSearchWithKeyword() {
         const searchInput = document.getElementById('searchInput');
         const searchTerm = searchInput.value.trim();
 
@@ -104,7 +345,7 @@ class DatasetManager {
             container.innerHTML = '<p class="loading">Searching datasets...</p>';
 
             // Call the FastAPI backend
-            const response = await fetch(`${CONFIG.BACKEND_URL}/search?keyword=${encodeURIComponent(searchTerm)}`);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/search-keyword?keyword=${encodeURIComponent(searchTerm)}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -117,7 +358,7 @@ class DatasetManager {
                 id: index + 1,
                 name: dataset.title,
                 description: dataset.reference,
-                category: 'Kaggle Dataset'
+                category: 'Search Result'
             }));
 
             this.renderAvailableDatasets();
@@ -137,15 +378,24 @@ class DatasetManager {
             return;
         }
 
-        container.innerHTML = this.availableDatasets.map(dataset => `
-            <div class="dataset-item" data-id="${dataset.id}" draggable="true">
-                <input type="checkbox" class="dataset-checkbox" data-id="${dataset.id}">
-                <div class="dataset-info">
-                    <div class="dataset-name">${dataset.name}</div>
-                    <div class="dataset-description">${dataset.description}</div>
+        container.innerHTML = this.availableDatasets.map(dataset => {
+            // Create Kaggle URL from the description/reference
+            const kaggleUrl = `https://www.kaggle.com/datasets/${dataset.description}`;
+            
+            return `
+                <div class="dataset-item" data-id="${dataset.id}" draggable="true">
+                    <input type="checkbox" class="dataset-checkbox" data-id="${dataset.id}">
+                    <div class="dataset-info">
+                        <div class="dataset-name">
+                            <a href="${kaggleUrl}" target="_blank" rel="noopener noreferrer" class="dataset-link">
+                                ${dataset.name}
+                            </a>
+                        </div>
+                        <div class="dataset-description">${dataset.description}</div>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         // Add event listeners for checkboxes
         this.attachCheckboxListeners();
@@ -169,13 +419,29 @@ class DatasetManager {
         const downloadContainer = document.getElementById('downloadDatasets');
 
         datasetItems.forEach(item => {
+            let isDragging = false;
+            
             item.addEventListener('dragstart', (e) => {
+                // Only allow dragging from the dataset item itself, not from links
+                if (e.target.classList.contains('dataset-link')) {
+                    e.preventDefault();
+                    return;
+                }
+                isDragging = true;
                 e.dataTransfer.setData('text/plain', e.target.dataset.id);
                 e.target.classList.add('dragging');
             });
 
             item.addEventListener('dragend', (e) => {
+                isDragging = false;
                 e.target.classList.remove('dragging');
+            });
+            
+            // Prevent link clicks during drag operations
+            item.addEventListener('click', (e) => {
+                if (isDragging && e.target.classList.contains('dataset-link')) {
+                    e.preventDefault();
+                }
             });
         });
 
@@ -304,11 +570,14 @@ class DatasetManager {
     clearAll() {
         this.downloadDatasets = [];
         this.availableDatasets = [];
+        this.uploadedFiles = [];
         
         document.getElementById('availableDatasets').innerHTML = 
-            '<p class="no-data">No search results yet. Enter a keyword to search for datasets.</p>';
+            '<p class="no-data">No search results yet. Upload files or enter a keyword to search for datasets.</p>';
         document.getElementById('downloadDatasets').innerHTML = 
             '<p class="no-data">Selected datasets will appear here.</p>';
+        document.getElementById('uploadedFiles').style.display = 'none';
+        document.getElementById('fileInput').value = '';
         document.getElementById('searchInput').value = '';
         
         this.updateDownloadButton();
@@ -316,35 +585,37 @@ class DatasetManager {
 
     async handleDownload() {
         if (this.downloadDatasets.length === 0) {
-            alert('Please select at least one dataset to download.');
+            alert('Please select at least one file to download.');
             return;
         }
 
         try {
-            // Extract descriptions (references) from selected datasets
-            const descriptions = this.downloadDatasets.map(dataset => dataset.description);
+            // Create a zip file with selected files
+            const selectedFiles = this.downloadDatasets.map(dataset => dataset.file).filter(file => file);
             
-            // Call the backend download endpoint
-            const response = await fetch(`${CONFIG.BACKEND_URL}/download`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    descriptions: descriptions
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (selectedFiles.length === 0) {
+                alert('No files available for download.');
+                return;
             }
 
-            const result = await response.json();
-            alert(`Download initiated for ${result.count} dataset(s):\n\n${result.message}`);
+            // For now, we'll trigger individual downloads for each file
+            // In a real application, you might want to create a zip file
+            selectedFiles.forEach(file => {
+                const url = URL.createObjectURL(file);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            alert(`Downloaded ${selectedFiles.length} file(s) successfully!`);
             
         } catch (error) {
-            console.error('Error downloading datasets:', error);
-            alert('Error downloading datasets. Please try again.');
+            console.error('Error downloading files:', error);
+            alert('Error downloading files. Please try again.');
         }
     }
 
@@ -365,11 +636,13 @@ const datasetManager = new DatasetManager();
 
 // Add some demo functionality
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Dataset Search & Download Manager initialized');
+    console.log('File Upload & Dataset Manager initialized');
     
     // Add a welcome message
     setTimeout(() => {
-        const searchInput = document.getElementById('searchInput');
-        searchInput.placeholder = 'Try searching for "iris", "titanic", "housing", or "covid"...';
+        const uploadArea = document.getElementById('fileUploadArea');
+        if (uploadArea) {
+            console.log('Upload area ready. Supported formats: CSV, PDF, Word (.docx), Excel (.xlsx)');
+        }
     }, 1000);
 });

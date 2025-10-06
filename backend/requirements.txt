@@ -2,3 +2,5 @@ fastapi
 kaggle
 uvicorn
 python-dotenv
+python-multipart
+pandas

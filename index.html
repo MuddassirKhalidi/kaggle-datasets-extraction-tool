@@ -9,16 +9,49 @@
 <body>
     <div class="container">
         <header>
-            <h1>Dataset Search & Download Manager</h1>
-            <p>Search for datasets and manage your downloads</p>
+            <h1>File Upload & Dataset Manager</h1>
+            <p>Upload your files and manage your datasets</p>
         </header>
 
         <div class="separator"></div>
 
-        <div class="search-section">
-            <div class="search-bar-container">
-                <input type="text" id="searchInput" placeholder="Enter dataset search keyword..." class="search-input">
-                <button id="searchBtn" class="search-btn">Search</button>
+        <div class="upload-section">
+            <div class="upload-container">
+                <div class="search-mode-picker">
+                    <div class="mode-options">
+                        <label class="mode-option">
+                            <input type="radio" name="searchMode" value="files" checked>
+                            <span class="mode-label">Search with Files</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="searchMode" value="keyword">
+                            <span class="mode-label">Search by Keyword</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="upload-bar-container">
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">
+                            <span class="upload-title">Upload Files</span>
+                            <span class="file-types">CSV, PDF, Word, Excel</span>
+                        </div>
+                        <input type="file" id="fileInput" multiple accept=".csv,.pdf,.docx,.xlsx" style="display: none;">
+                        <button id="uploadBtn" class="upload-btn">Choose Files</button>
+                    </div>
+                    
+                    <div class="search-input-area" id="searchInputArea" style="display: none;">
+                        <div class="search-icon">🔍</div>
+                        <input type="text" id="searchInput" placeholder="Enter search keyword..." class="search-input">
+                    </div>
+                    
+                    <button id="searchBtn" class="search-btn">Search</button>
+                </div>
+                <div class="uploaded-files" id="uploadedFiles" style="display: none;">
+                    <h4>Uploaded Files:</h4>
+                    <div class="file-list" id="fileList"></div>
+                </div>
             </div>
         </div>
 
@@ -34,7 +67,7 @@
                     <tr>
                         <td class="available-column">
                             <div id="availableDatasets" class="datasets-list">
-                                <p class="no-data">No search results yet. Enter a keyword to search for datasets.</p>
+                                <p class="no-data">No search results yet. Upload files or enter a keyword to search for datasets.</p>
                             </div>
                         </td>
                         <td class="download-column">
