@@ -4,3 +4,4 @@ backend/modules/__pycache__
 .env
 .DS_Store
 .ipynb_checkpoints
+DS-DUST/venv
