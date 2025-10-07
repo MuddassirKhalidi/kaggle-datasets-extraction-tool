@@ -61,8 +61,8 @@ const sampleDatasets = [
 class DatasetManager {
     constructor() {
         this.availableDatasets = [];
-        this.downloadDatasets = [];
         this.uploadedFiles = [];
+        this.selectedDataset = null;
         this.currentMode = 'files'; // 'files' or 'keyword'
         this.initializeEventListeners();
     }
@@ -74,7 +74,6 @@ class DatasetManager {
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
-        const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
         
         // Mode switching
         const modeRadios = document.querySelectorAll('input[name="searchMode"]');
@@ -118,12 +117,6 @@ class DatasetManager {
 
         // Clear all functionality
         clearAllBtn.addEventListener('click', () => this.clearAll());
-
-        // Download selected functionality
-        downloadSelectedBtn.addEventListener('click', () => this.handleDownload());
-
-        // Update download button state
-        this.updateDownloadButton();
     }
 
     // File validation
@@ -244,9 +237,6 @@ class DatasetManager {
     removeFile(index) {
         this.uploadedFiles.splice(index, 1);
         this.renderUploadedFiles();
-        // Don't automatically update Available Datasets when removing files
-        this.renderDownloadDatasets();
-        this.updateDownloadButton();
     }
 
     // Handle mode change
@@ -312,8 +302,12 @@ class DatasetManager {
             // Transform the API response to match the expected format
             this.availableDatasets = data.datasets.map((dataset, index) => ({
                 id: index + 1,
-                name: dataset.title,
-                description: dataset.reference,
+                title: dataset.title,
+                reference: dataset.reference,
+                license: dataset.license,
+                tags: dataset.tags,
+                last_updated: dataset.last_updated,
+                files: dataset.files,
                 category: 'Similar Dataset'
             }));
 
@@ -356,8 +350,12 @@ class DatasetManager {
             // Transform the API response to match the expected format
             this.availableDatasets = data.datasets.map((dataset, index) => ({
                 id: index + 1,
-                name: dataset.title,
-                description: dataset.reference,
+                title: dataset.title,
+                reference: dataset.reference,
+                license: dataset.license,
+                tags: dataset.tags,
+                last_updated: dataset.last_updated,
+                files: dataset.files,
                 category: 'Search Result'
             }));
 
@@ -379,256 +377,77 @@ class DatasetManager {
         }
 
         container.innerHTML = this.availableDatasets.map(dataset => {
-            // Create Kaggle URL from the description/reference
-            const kaggleUrl = `https://www.kaggle.com/datasets/${dataset.description}`;
+            // Create Kaggle URL from the reference
+            const kaggleUrl = `https://www.kaggle.com/datasets/${dataset.reference}`;
             
             return `
-                <div class="dataset-item" data-id="${dataset.id}" draggable="true">
-                    <input type="checkbox" class="dataset-checkbox" data-id="${dataset.id}">
+                <div class="dataset-item" data-id="${dataset.id}" onclick="datasetManager.selectDataset(${dataset.id})">
                     <div class="dataset-info">
-                        <div class="dataset-name">
+                        <div class="dataset-title">
                             <a href="${kaggleUrl}" target="_blank" rel="noopener noreferrer" class="dataset-link">
-                                ${dataset.name}
+                                ${dataset.title}
                             </a>
                         </div>
-                        <div class="dataset-description">${dataset.description}</div>
+                        <div class="dataset-reference">${dataset.reference}</div>
+                        <div class="dataset-license">License: ${dataset.license}</div>
+                        <div class="dataset-last-updated">Updated: ${dataset.last_updated}</div>
+                        <div class="dataset-tags">
+                            ${dataset.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
                     </div>
                 </div>
             `;
         }).join('');
+    }
 
-        // Add event listeners for checkboxes
-        this.attachCheckboxListeners();
+    selectDataset(datasetId) {
+        this.selectedDataset = this.availableDatasets.find(d => d.id === datasetId);
+        this.renderFilesList();
+    }
+
+    renderFilesList() {
+        const container = document.getElementById('filesList');
         
-        // Add drag and drop functionality
-        this.attachDragAndDropListeners();
-    }
-
-    attachCheckboxListeners() {
-        const checkboxes = document.querySelectorAll('.dataset-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                const datasetId = parseInt(e.target.dataset.id);
-                this.toggleDatasetSelection(datasetId);
-            });
-        });
-    }
-
-    attachDragAndDropListeners() {
-        const datasetItems = document.querySelectorAll('.dataset-item');
-        const downloadContainer = document.getElementById('downloadDatasets');
-
-        datasetItems.forEach(item => {
-            let isDragging = false;
-            
-            item.addEventListener('dragstart', (e) => {
-                // Only allow dragging from the dataset item itself, not from links
-                if (e.target.classList.contains('dataset-link')) {
-                    e.preventDefault();
-                    return;
-                }
-                isDragging = true;
-                e.dataTransfer.setData('text/plain', e.target.dataset.id);
-                e.target.classList.add('dragging');
-            });
-
-            item.addEventListener('dragend', (e) => {
-                isDragging = false;
-                e.target.classList.remove('dragging');
-            });
-            
-            // Prevent link clicks during drag operations
-            item.addEventListener('click', (e) => {
-                if (isDragging && e.target.classList.contains('dataset-link')) {
-                    e.preventDefault();
-                }
-            });
-        });
-
-        // Download container drag events
-        downloadContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            downloadContainer.classList.add('drag-over');
-        });
-
-        downloadContainer.addEventListener('dragleave', (e) => {
-            downloadContainer.classList.remove('drag-over');
-        });
-
-        downloadContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            downloadContainer.classList.remove('drag-over');
-            
-            const datasetId = parseInt(e.dataTransfer.getData('text/plain'));
-            this.addToDownloadList(datasetId);
-        });
-    }
-
-    toggleDatasetSelection(datasetId) {
-        const dataset = this.availableDatasets.find(d => d.id === datasetId);
-        const existingIndex = this.downloadDatasets.findIndex(d => d.id === datasetId);
-
-        if (existingIndex === -1) {
-            // Add to download list
-            this.downloadDatasets.push(dataset);
-        } else {
-            // Remove from download list
-            this.downloadDatasets.splice(existingIndex, 1);
-        }
-
-        this.renderDownloadDatasets();
-        this.updateDownloadButton();
-    }
-
-    addToDownloadList(datasetId) {
-        const dataset = this.availableDatasets.find(d => d.id === datasetId);
-        
-        if (!dataset) return;
-
-        const existingIndex = this.downloadDatasets.findIndex(d => d.id === datasetId);
-        if (existingIndex === -1) {
-            this.downloadDatasets.push(dataset);
-            
-            // Check the corresponding checkbox
-            const checkbox = document.querySelector(`.dataset-checkbox[data-id="${datasetId}"]`);
-            if (checkbox) {
-                checkbox.checked = true;
-            }
-        }
-
-        this.renderDownloadDatasets();
-        this.updateDownloadButton();
-    }
-
-    renderDownloadDatasets() {
-        const container = document.getElementById('downloadDatasets');
-        
-        if (this.downloadDatasets.length === 0) {
-            container.innerHTML = '<p class="no-data">Selected datasets will appear here.</p>';
+        if (!this.selectedDataset) {
+            container.innerHTML = '<p class="no-data">Click on a dataset to view its files.</p>';
             return;
         }
 
-        container.innerHTML = this.downloadDatasets.map(dataset => `
-            <div class="dataset-item selected" data-id="${dataset.id}">
-                <div class="dataset-info">
-                    <div class="dataset-name">${dataset.name}</div>
-                    <div class="dataset-description">${dataset.description}</div>
-                </div>
-                <button class="remove-btn" onclick="datasetManager.removeFromDownloadList(${dataset.id})">×</button>
+        if (!this.selectedDataset.files || this.selectedDataset.files.length === 0) {
+            container.innerHTML = '<p class="no-data">No files available for this dataset.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="files-header">
+                <h3>Files in "${this.selectedDataset.title}"</h3>
             </div>
-        `).join('');
-
-        // Add remove button styles
-        this.addRemoveButtonStyles();
-    }
-
-    addRemoveButtonStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .remove-btn {
-                background: #dc3545;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                width: 30px;
-                height: 30px;
-                font-size: 18px;
-                font-weight: bold;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                margin-left: auto;
-            }
-            
-            .remove-btn:hover {
-                background: #c82333;
-                transform: scale(1.1);
-            }
+            <div class="files-list">
+                ${this.selectedDataset.files.map(file => `
+                    <div class="file-item">
+                        <div class="file-name">${file[0]}</div>
+                        <div class="file-size">${file[1]}</div>
+                    </div>
+                `).join('')}
+            </div>
         `;
-        
-        if (!document.querySelector('style[data-remove-btn]')) {
-            style.setAttribute('data-remove-btn', 'true');
-            document.head.appendChild(style);
-        }
     }
 
-    removeFromDownloadList(datasetId) {
-        this.downloadDatasets = this.downloadDatasets.filter(d => d.id !== datasetId);
-        
-        // Uncheck the corresponding checkbox
-        const checkbox = document.querySelector(`.dataset-checkbox[data-id="${datasetId}"]`);
-        if (checkbox) {
-            checkbox.checked = false;
-        }
-
-        this.renderDownloadDatasets();
-        this.updateDownloadButton();
-    }
 
     clearAll() {
-        this.downloadDatasets = [];
         this.availableDatasets = [];
         this.uploadedFiles = [];
+        this.selectedDataset = null;
         
         document.getElementById('availableDatasets').innerHTML = 
             '<p class="no-data">No search results yet. Upload files or enter a keyword to search for datasets.</p>';
-        document.getElementById('downloadDatasets').innerHTML = 
-            '<p class="no-data">Selected datasets will appear here.</p>';
+        document.getElementById('filesList').innerHTML = 
+            '<p class="no-data">Click on a dataset to view its files.</p>';
         document.getElementById('uploadedFiles').style.display = 'none';
         document.getElementById('fileInput').value = '';
         document.getElementById('searchInput').value = '';
-        
-        this.updateDownloadButton();
     }
 
-    async handleDownload() {
-        if (this.downloadDatasets.length === 0) {
-            alert('Please select at least one file to download.');
-            return;
-        }
-
-        try {
-            // Create a zip file with selected files
-            const selectedFiles = this.downloadDatasets.map(dataset => dataset.file).filter(file => file);
-            
-            if (selectedFiles.length === 0) {
-                alert('No files available for download.');
-                return;
-            }
-
-            // For now, we'll trigger individual downloads for each file
-            // In a real application, you might want to create a zip file
-            selectedFiles.forEach(file => {
-                const url = URL.createObjectURL(file);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
-
-            alert(`Downloaded ${selectedFiles.length} file(s) successfully!`);
-            
-        } catch (error) {
-            console.error('Error downloading files:', error);
-            alert('Error downloading files. Please try again.');
-        }
-    }
-
-    updateDownloadButton() {
-        const downloadBtn = document.getElementById('downloadSelectedBtn');
-        downloadBtn.disabled = this.downloadDatasets.length === 0;
-        
-        if (this.downloadDatasets.length > 0) {
-            downloadBtn.textContent = `Download Selected (${this.downloadDatasets.length})`;
-        } else {
-            downloadBtn.textContent = 'Download Selected';
-        }
-    }
 }
 
 // Initialize the application

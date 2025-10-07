@@ -395,9 +395,6 @@ header p {
     margin-bottom: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 15px;
     position: relative;
 }
 
@@ -407,40 +404,15 @@ header p {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.dataset-item.selected {
-    background: #16340c;
-    border-color: #16340c;
-}
-
-.dataset-item.selected .dataset-name {
-    color: #b8cbaa;
-}
-
-.dataset-item.selected .dataset-description {
-    color: #e0e3dd;
-}
-
-.dataset-item.selected .dataset-size {
-    background: #b8cbaa;
-    color: #16340c;
-}
-
-.dataset-checkbox {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    accent-color: #16340c;
-}
-
 .dataset-info {
-    flex: 1;
+    width: 100%;
 }
 
-.dataset-name {
-    font-weight: 600;
+.dataset-title {
+    font-weight: 700;
     color: #16340c;
-    margin-bottom: 5px;
-    font-size: 1rem;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
 }
 
 .dataset-link {
@@ -454,41 +426,84 @@ header p {
     text-decoration: underline;
 }
 
-.dataset-item.selected .dataset-link {
-    color: #b8cbaa;
-}
-
-.dataset-item.selected .dataset-link:hover {
-    color: #ffffff;
-    text-decoration: underline;
-}
-
-.dataset-description {
-    color: #6c757d;
+.dataset-reference {
+    color: #16340c;
     font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.dataset-size {
-    background: #16340c;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 0.8rem;
     font-weight: 500;
+    margin-bottom: 6px;
+    font-family: 'Courier New', monospace;
+}
+
+.dataset-license {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.dataset-last-updated {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+}
+
+.dataset-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-top: 8px;
-    display: inline-block;
 }
 
-/* Draggable styles */
-.dataset-item.dragging {
-    opacity: 0.5;
-    transform: rotate(5deg);
+.tag {
+    background: #b8cbaa;
+    color: #16340c;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(22, 52, 12, 0.2);
 }
 
-.download-column.drag-over {
-    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
-    border: 2px dashed #28a745;
+/* Files display */
+.files-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #16340c;
+}
+
+.files-header h3 {
+    color: #16340c;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.files-list .file-item {
+    background: #16340c;
+    color: #b8cbaa;
+    border-radius: 8px;
+    padding: 12px 15px;
+    border: 1px solid rgba(184, 203, 170, 0.3);
+}
+
+.files-list .file-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+    color: #e0e3dd;
+}
+
+.files-list .file-size {
+    font-size: 0.85rem;
+    color: #b8cbaa;
+    opacity: 0.9;
 }
 
 /* Actions */
@@ -501,7 +516,7 @@ header p {
     gap: 20px;
 }
 
-.clear-btn, .download-btn {
+.clear-btn {
     padding: 15px 30px;
     border: none;
     border-radius: 50px;
@@ -510,9 +525,6 @@ header p {
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 150px;
-}
-
-.clear-btn {
     background: #6c757d;
     color: white;
 }
@@ -521,23 +533,6 @@ header p {
     background: #5a6268;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
-}
-
-.download-btn {
-    background: #16340c;
-    color: white;
-}
-
-.download-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-}
-
-.download-btn:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
 }
 
 /* Scrollbar styling */

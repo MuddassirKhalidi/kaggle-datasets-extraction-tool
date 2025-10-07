@@ -21,6 +21,10 @@ app.add_middleware(
 class DatasetResponse(BaseModel):
     title: str
     reference: str
+    license: str
+    tags: List[str]
+    last_updated: str
+    files: List[tuple]
 
 class SearchResponse(BaseModel):
     datasets: List[DatasetResponse]
@@ -59,10 +63,16 @@ async def search_datasets_by_keyword(keyword: str):
             raise HTTPException(status_code=400, detail="Keyword cannot be empty")
         
         results = search_datasets(keyword.strip())
-        
         datasets = [
-            DatasetResponse(title=title, reference=reference) 
-            for title, reference in results
+            DatasetResponse(
+                title=title, 
+                reference=reference, 
+                license=license,
+                tags=tags,
+                last_updated=str(last_updated),
+                files=[(file_name, f"{file_size} MB") for file_name, file_size in files] if files is not None else []
+            ) 
+            for title, reference, license, tags, last_updated, files in results
         ]
         
         return SearchResponse(datasets=datasets)
@@ -122,14 +132,23 @@ async def search_datasets_by_files(files: List[UploadFile] = File(...)):
         seen = set()
         unique_results = []
         for result in all_results:
-            if result not in seen:
-                seen.add(result)
+            # Use title and reference as the unique identifier (hashable)
+            result_key = (result[0], result[1])  # (title, reference)
+            if result_key not in seen:
+                seen.add(result_key)
                 unique_results.append(result)
         
         # Convert results to DatasetResponse objects
         datasets = [
-            DatasetResponse(title=title, reference=reference) 
-            for title, reference in unique_results
+            DatasetResponse(
+                title=title, 
+                reference=reference, 
+                license=license,
+                tags=tags,
+                last_updated=str(last_updated),
+                files=[(file_name, f"{file_size} MB") for file_name, file_size in files] if files is not None else []
+            ) 
+            for title, reference, license, tags, last_updated, files in unique_results
         ]
         
         return FileUploadResponse(
