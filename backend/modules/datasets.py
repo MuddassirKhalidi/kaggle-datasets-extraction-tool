@@ -14,9 +14,9 @@ class RateLimitedKaggleAPI:
         self.api = KaggleApi()
         self.api.authenticate()
         # Conservative rate limits - adjust based on your needs
-        self.min_delay = 2.0  # Minimum delay between requests (seconds)
-        self.max_delay = 10.0  # Maximum delay for backoff
-        self.base_delay = 2.0  # Base delay for exponential backoff
+        self.min_delay = 1.0  # Minimum delay between requests (seconds)
+        self.max_delay = 3.0  # Maximum delay for backoff
+        self.base_delay = 1.0  # Base delay for exponential backoff
         
     def _make_request_with_retry(self, func, *args, max_retries=3, **kwargs):
         """Make API request with exponential backoff retry logic"""
