@@ -1,7 +1,7 @@
 // Configuration file for the frontend
 const CONFIG = {
     // Backend API URL - change this to point to your backend server
-    BACKEND_URL: 'http://localhost:8000'
+    BACKEND_URL: 'https://data-lakes-management.onrender.com'
 };
 
 // Make CONFIG available globally
