@@ -103,7 +103,7 @@ async def search_datasets_by_files(files: List[UploadFile] = File(...)):
                 
             # Check if it's a CSV file
             filename = file.filename.lower()
-            if not filename.endswith('.csv'):
+            if not (filename.endswith('.csv') or filename.endswith('.xlsx')):
                 continue  # Skip non-CSV files for now
                 
             # Create temporary file
