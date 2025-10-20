@@ -34,7 +34,6 @@ src/
 ### Prerequisites
 
 - Python 3.9+ 
-- Node.js (optional, for serving frontend files)
 - Kaggle API credentials
 
 ### 1. Kaggle API Setup
